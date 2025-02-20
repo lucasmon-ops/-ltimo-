@@ -1,0 +1,64 @@
+local function highlightPlayer(player)
+    if player.Character and player.Team ~= game.Players.LocalPlayer.Team then
+        for _, part in pairs(player.Character:GetChildren()) do
+            if part:IsA("BasePart") then
+                local highlight = Instance.new("BoxHandleAdornment")
+                highlight.Size = part.Size + Vector3.new(0.1, 0.1, 0.1)
+                highlight.Adornee = part
+                highlight.Color3 = Color3.fromRGB(255, 0, 0) -- Vermelho para inimigos
+                highlight.AlwaysOnTop = true
+                highlight.ZIndex = 5
+                highlight.Parent = game.CoreGui
+            end
+        end
+    end
+end
+
+-- Aplicar ESP para todos os jogadores
+local function applyESP()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer then
+            highlightPlayer(player)
+        end
+    end
+end
+
+game.Players.PlayerAdded:Connect(applyESP)
+applyESP()
+
+-- Aimbot: Mira automaticamente no inimigo mais próximo
+local UserInputService = game:GetService("UserInputService")
+local Camera = game.Workspace.CurrentCamera
+local LocalPlayer = game.Players.LocalPlayer
+
+local function getClosestEnemy()
+    local closestEnemy = nil
+    local shortestDistance = math.huge
+
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player.Character and player.Character:FindFirstChild("Head") then
+            local enemyHead = player.Character.Head
+            local screenPosition, onScreen = Camera:WorldToViewportPoint(enemyHead.Position)
+            if onScreen then
+                local mousePos = UserInputService:GetMouseLocation()
+                local distance = (Vector2.new(screenPosition.X, screenPosition.Y) - mousePos).magnitude
+
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestEnemy = enemyHead
+                end
+            end
+        end
+    end
+    return closestEnemy
+end
+
+-- Ativar Aimbot ao segurar o botão direito do mouse
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        local target = getClosestEnemy()
+        if target then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        end
+    end
+end)
